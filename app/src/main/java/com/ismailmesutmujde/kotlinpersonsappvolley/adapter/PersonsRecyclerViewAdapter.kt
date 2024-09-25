@@ -11,9 +11,14 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.PopupMenu
 import androidx.recyclerview.widget.RecyclerView
+import com.android.volley.Request
+import com.android.volley.Response
+import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
 import com.google.android.material.snackbar.Snackbar
 import com.ismailmesutmujde.kotlinpersonsappvolley.R
 import com.ismailmesutmujde.kotlinpersonsappvolley.model.Persons
+import org.json.JSONObject
 
 class PersonsRecyclerViewAdapter(private val mContext : Context,
                                  private var personsList : List<Persons>)
@@ -51,7 +56,7 @@ class PersonsRecyclerViewAdapter(private val mContext : Context,
                     R.id.action_delete -> {
                         Snackbar.make(holder.imageViewDot,"Delete ${person.person_name}?", Snackbar.LENGTH_SHORT)
                             .setAction("YES") {
-
+                                deletePerson(person.person_id)
                             }.show()
                         true
                     }
@@ -80,7 +85,7 @@ class PersonsRecyclerViewAdapter(private val mContext : Context,
         alertDialog.setPositiveButton("Update") { dialogInterface, i ->
             val person_name = editTextPersonName.text.toString().trim()
             val person_phone = editTextPersonPhone.text.toString().trim()
-
+            updatePerson(person.person_id,person_name,person_phone)
             Toast.makeText(mContext, "${person_name} - ${person_phone}", Toast.LENGTH_SHORT).show()
 
         }
@@ -89,5 +94,65 @@ class PersonsRecyclerViewAdapter(private val mContext : Context,
 
         }
         alertDialog.show()
+    }
+
+    fun updatePerson(person_id : Int, person_name:String, person_phone:String) {
+        val url = "http://kasimadalan.pe.hu/kisiler/update_kisiler.php"
+        val request = object : StringRequest(Request.Method.POST, url, Response.Listener { response->
+
+            allPersons()
+
+        }, Response.ErrorListener {  }){
+            override fun getParams(): MutableMap<String, String>? {
+                val params = HashMap<String,String>()
+                params["kisi_id"] = person_id.toString()
+                params["kisi_ad"] = person_name
+                params["kisi_tel"] = person_phone
+                return params
+            }
+        }
+        Volley.newRequestQueue(mContext).add(request)
+    }
+
+    fun deletePerson(person_id : Int) {
+        val url = "http://kasimadalan.pe.hu/kisiler/delete_kisiler.php"
+        val request = object : StringRequest(Request.Method.POST, url, Response.Listener { response->
+
+            allPersons()
+
+        }, Response.ErrorListener {  }){
+            override fun getParams(): MutableMap<String, String>? {
+                val params = HashMap<String,String>()
+                params["kisi_id"] = person_id.toString()
+                return params
+            }
+        }
+        Volley.newRequestQueue(mContext).add(request)
+    }
+
+    fun allPersons() {
+        val url = "http://kasimadalan.pe.hu/kisiler/tum_kisiler.php"
+        val request = StringRequest(Request.Method.GET, url, Response.Listener { response->
+            try {
+                val tempList = ArrayList<Persons>()
+                val jsonObject = JSONObject(response)
+                val persons = jsonObject.getJSONArray("kisiler")
+
+                for (i in 0 until persons.length()) {
+                    val p = persons.getJSONObject(i)
+                    val person = Persons(p.getInt("kisi_id")
+                        ,p.getString("kisi_ad")
+                        ,p.getString("kisi_tel"))
+                    tempList.add(person)
+                }
+
+                personsList = tempList
+                notifyDataSetChanged()
+
+            } catch (e:Exception) {
+                e.printStackTrace()
+            }
+        }, Response.ErrorListener {  })
+        Volley.newRequestQueue(mContext).add(request)
     }
 }
