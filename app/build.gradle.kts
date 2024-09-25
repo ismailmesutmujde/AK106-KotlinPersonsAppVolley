@@ -7,6 +7,10 @@ android {
     namespace = "com.ismailmesutmujde.kotlinpersonsappvolley"
     compileSdk = 34
 
+    buildFeatures {
+        viewBinding = true
+    }
+
     defaultConfig {
         applicationId = "com.ismailmesutmujde.kotlinpersonsappvolley"
         minSdk = 24
